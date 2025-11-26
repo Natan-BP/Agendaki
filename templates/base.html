@@ -2,23 +2,68 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agendaki</title>
+    
+    <!-- 1. Importando a fonte Inter (usada em designs modernos) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- 2. Importando Tailwind CSS (O motor do visual do Lovable) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 3. Importando Lucide Icons (Os ícones que o Lovable usou) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Configurando as cores do Lovable no Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        border: "hsl(var(--border))",
+                        input: "hsl(var(--input))",
+                        ring: "hsl(var(--ring))",
+                        background: "#ffffff",
+                        foreground: "#020817",
+                        primary: {
+                            DEFAULT: "#0f172a", // Azul escuro quase preto
+                            foreground: "#f8fafc",
+                        },
+                        secondary: {
+                            DEFAULT: "#f1f5f9",
+                            foreground: "#0f172a",
+                        },
+                        destructive: {
+                            DEFAULT: "#ef4444",
+                            foreground: "#f8fafc",
+                        },
+                        muted: {
+                            DEFAULT: "#f1f5f9",
+                            foreground: "#64748b",
+                        },
+                        accent: {
+                            DEFAULT: "#f1f5f9",
+                            foreground: "#0f172a",
+                        },
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #0f172a; }
+    </style>
 </head>
-<body>
-<header>
-    <h1>Agendaki</h1>
+<body class="min-h-screen bg-slate-50">
+    
+    <!-- Conteúdo das páginas vai aqui -->
+    {% block content %}
+    {% endblock %}
 
-    {% if user.is_authenticated %}
-        <p>Logado como: {{ user.username }}</p>
-        <a href="{% url 'home' %}">Home</a> |
-        <a href="{% url 'logout' %}">Sair</a>
-    {% else %}
-        <a href="{% url 'login' %}">Login</a> |
-        <a href="{% url 'signup' %}">Cadastro</a>
-    {% endif %}
-    <hr>
-</header>
-
-{% block content %}{% endblock %}
+    <!-- Script para fazer os ícones aparecerem -->
+    <script>
+        lucide.createIcons();
+    </script>
 </body>
 </html>

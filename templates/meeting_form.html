@@ -1,26 +1,52 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h2>Criar reunião</h2>
+<div class="flex items-center justify-center min-h-[80vh]">
+    <div class="w-full max-w-md bg-white rounded-lg border shadow-sm p-8">
+        
+        <div class="mb-6 text-center">
+            <h2 class="text-2xl font-bold tracking-tight text-slate-900">Criar Nova Reunião</h2>
+            <p class="text-sm text-slate-500">Defina o título e o objetivo.</p>
+        </div>
 
-<form method="post">
-    {% csrf_token %}
-    {{ form.non_field_errors }}
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            
+            <style>
+                /* Isso faz os inputs do Django ficarem bonitos com Tailwind */
+                input[type="text"], textarea, select {
+                    width: 100%;
+                    padding: 0.5rem 0.75rem;
+                    border-radius: 0.375rem;
+                    border: 1px solid #e2e8f0;
+                    font-size: 0.875rem;
+                    margin-top: 0.25rem;
+                }
+                input:focus, textarea:focus {
+                    outline: none;
+                    border-color: #0f172a;
+                    ring: 2px solid #0f172a;
+                }
+                label {
+                    font-weight: 500;
+                    font-size: 0.875rem;
+                    color: #0f172a;
+                }
+            </style>
 
-    <div>
-        <label for="{{ form.title.id_for_label }}">{{ form.title.label }}:</label>
-        {{ form.title }}
-        {{ form.title.errors }}
+            <div>
+                {{ form.as_p }}
+            </div>
+
+            <div class="flex gap-3 pt-4">
+                <a href="{% url 'home' %}" class="w-1/2 inline-flex justify-center items-center rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">
+                    Cancelar
+                </a>
+                <button type="submit" class="w-1/2 inline-flex justify-center items-center rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
+                    Salvar Reunião
+                </button>
+            </div>
+        </form>
     </div>
-
-    <div>
-        <label for="{{ form.description.id_for_label }}">{{ form.description.label }}:</label>
-        {{ form.description }}
-        {{ form.description.errors }}
-    </div>
-
-    <button type="submit">Salvar</button>
-</form>
-
-<p><a href="{% url 'home' %}">Voltar</a></p>
+</div>
 {% endblock %}

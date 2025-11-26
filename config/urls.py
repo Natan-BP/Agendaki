@@ -25,6 +25,6 @@ urlpatterns = [
     path('calendar/', core_views.calendar_view, name='calendar'),
     path('meetings/<uuid:meeting_id>/reopen/', core_views.reopen_meeting_view, name='reopen_meeting'),
     path('invite/<uuid:token>/', core_views.meeting_invite_view, name='meeting_invite'),
-
+    path('meetings/<uuid:meeting_id>/slots/generate/', core_views.generate_slots_view, name='generate_slots'),
 
 ]

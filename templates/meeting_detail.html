@@ -1,74 +1,151 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h2>Reunião: {{ meeting.title }}</h2>
-<p>{{ meeting.description }}</p>
-<p>Status: {{ meeting.get_status_display }}</p>
+<div class="max-w-4xl mx-auto space-y-6">
 
-{% if meeting.chosen_start %}
-    <p><strong>Horário final escolhido:</strong>
-        {{ meeting.chosen_start }} → {{ meeting.chosen_end }}
-    </p>
-{% else %}
-    <p><strong>Horário final ainda não definido.</strong></p>
-{% endif %}
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-lg border shadow-sm">
+        <div>
+            <div class="flex items-center gap-2 mb-2">
+                <h2 class="text-2xl font-bold text-slate-900">{{ meeting.title }}</h2>
+                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold
+                    {% if meeting.status == 'CONFIRMADA' %} bg-green-100 text-green-800
+                    {% else %} bg-yellow-100 text-yellow-800 {% endif %}">
+                    {{ meeting.get_status_display }}
+                </span>
+            </div>
+            <p class="text-slate-500">{{ meeting.description|default:"Sem descrição adicional." }}</p>
+        </div>
 
-{% if user == meeting.leader %}
-    <p>
-        <a href="{% url 'manage_timeslots' meeting.id %}">
-            <button>Gerenciar horários</button>
-        </a>
-
-        {% if meeting.status == 'CONFIRMADA' %}
-            <a href="{% url 'reopen_meeting' meeting.id %}">
-                <button>Reabrir votação</button>
-            </a>
-        {% endif %}
-    </p>
-
-    <h3>Link de convite</h3>
-    <p>
-        Compartilhe este link com os alunos para eles votarem:<br>
-        <code>{{ invite_url }}</code>
-    </p>
-{% else %}
-    <p>
-        <a href="{% url 'vote_meeting' meeting.id %}">
-            <button>Preencher minha disponibilidade</button>
-        </a>
-    </p>
-{% endif %}
-
-<h3>Horários propostos</h3>
-<ul>
-    {% for slot in time_slots %}
-        <li>
-            {{ slot.start }} → {{ slot.end }}
-            | Votos: {{ slot.num_votos }}
-
-            {% if user == meeting.leader %}
-                {% if meeting.chosen_start and slot.start == meeting.chosen_start and slot.end == meeting.chosen_end %}
-                    <strong>(Selecionado)</strong>
-                {% else %}
-                    <a href="{% url 'confirm_slot' meeting.id slot.id %}">
-                        [Definir este horário]
+        {% if user == meeting.leader %}
+            <div class="flex gap-2">
+                <a href="{% url 'manage_timeslots' meeting.id %}" class="inline-flex items-center justify-center rounded-md text-sm font-medium border border-slate-200 bg-white hover:bg-slate-50 h-9 px-4">
+                    <i data-lucide="settings" class="mr-2 h-4 w-4"></i>
+                    Gerenciar
+                </a>
+                {% if meeting.status == 'CONFIRMADA' %}
+                    <a href="{% url 'reopen_meeting' meeting.id %}" class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-yellow-100 text-yellow-800 hover:bg-yellow-200 h-9 px-4">
+                        Reabrir
                     </a>
                 {% endif %}
-            {% endif %}
-        </li>
-    {% empty %}
-        <li>Nenhum horário cadastrado ainda.</li>
-    {% endfor %}
-</ul>
+            </div>
+        {% endif %}
+    </div>
 
-<h3>Participantes que já votaram</h3>
-<ul>
-    {% for p in participants %}
-        <li>{{ p.username }} ({{ p.get_role_display }})</li>
-    {% empty %}
-        <li>Nenhum participante votou ainda.</li>
-    {% endfor %}
-</ul>
+    {% if user == meeting.leader %}
+    <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="text-sm text-blue-900">
+            <strong>Link de convite:</strong> Compartilhe com os alunos.
+        </div>
+        <div class="flex w-full md:w-auto gap-2">
+            <input type="text" readonly value="{{ invite_url }}" class="flex h-9 w-full md:w-64 rounded-md border border-blue-200 bg-white px-3 py-1 text-xs text-slate-600 focus:outline-none">
+        </div>
+    </div>
+    {% endif %}
 
-<p><a href="{% url 'home' %}">Voltar</a></p>
+    {% if meeting.chosen_start %}
+    <div class="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+        <h3 class="text-green-800 font-semibold mb-1">🎉 Horário Confirmado!</h3>
+        <p class="text-2xl font-bold text-green-700">
+            {{ meeting.chosen_start|date:"d/m" }} — {{ meeting.chosen_start|date:"H:i" }} às {{ meeting.chosen_end|date:"H:i" }}
+        </p>
+    </div>
+    {% endif %}
+
+    <div class="grid md:grid-cols-3 gap-6">
+        
+        <div class="md:col-span-2 space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-slate-900">Horários Propostos</h3>
+                
+                {% if user != meeting.leader %}
+                    {% if meeting.status == 'EM_VOTACAO' %}
+                        <a href="{% url 'vote_meeting' meeting.id %}" class="inline-flex items-center justify-center rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
+                            Preencher Disponibilidade
+                        </a>
+                    {% else %}
+                        <button disabled class="opacity-50 cursor-not-allowed inline-flex items-center justify-center rounded-md bg-slate-200 px-4 py-2 text-sm font-medium text-slate-500">
+                            Votação Encerrada
+                        </button>
+                    {% endif %}
+                {% endif %}
+            </div>
+
+            <div class="bg-white rounded-lg border shadow-sm divide-y">
+                {% for slot in time_slots %}
+                    <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 {% if meeting.chosen_start == slot.start %}bg-green-50{% endif %}">
+                        
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-medium text-slate-900">
+                                    {{ slot.start|date:"d/m" }}
+                                </span>
+                                <span class="text-slate-500">
+                                    {{ slot.start|date:"H:i" }} - {{ slot.end|date:"H:i" }}
+                                </span>
+                                {% if meeting.chosen_start == slot.start %}
+                                    <span class="text-xs bg-green-200 text-green-800 px-2 py-0.5 rounded-full font-bold">Escolhido</span>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mt-2 text-sm text-slate-500">
+                                <span class="font-semibold text-slate-700">{{ slot.num_votos }} votos:</span>
+                                {% for availability in slot.availabilities.all %}
+                                    <span class="inline-block bg-slate-100 px-1.5 rounded text-xs mx-0.5">
+                                        {{ availability.user.username }}
+                                    </span>
+                                {% empty %}
+                                    <span class="italic text-slate-400 text-xs">Ninguém ainda</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        {% if user == meeting.leader and meeting.status == 'EM_VOTACAO' %}
+                            <a href="{% url 'confirm_slot' meeting.id slot.id %}" class="shrink-0 inline-flex items-center justify-center rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-900 hover:bg-slate-50 hover:text-green-600 hover:border-green-200 transition-colors">
+                                <i data-lucide="check" class="mr-1.5 h-3 w-3"></i>
+                                Escolher este
+                            </a>
+                        {% endif %}
+                    </div>
+                {% empty %}
+                    <div class="p-8 text-center text-slate-500">
+                        Nenhum horário cadastrado. 
+                        {% if user == meeting.leader %}
+                            <a href="{% url 'manage_timeslots' meeting.id %}" class="text-blue-600 hover:underline">Adicionar agora</a>.
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div>
+            <div class="bg-white rounded-lg border shadow-sm p-4 sticky top-24">
+                <h3 class="text-sm font-semibold text-slate-900 mb-3 uppercase tracking-wider">Participantes</h3>
+                <ul class="space-y-2">
+                    {% for p in participants %}
+                        <li class="flex items-center gap-2 text-sm text-slate-600">
+                            <div class="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500">
+                                {{ p.username|slice:":2"|upper }}
+                            </div>
+                            <span>{{ p.username }}</span>
+                            {% if p == meeting.leader %}
+                                <span class="text-xs bg-blue-50 text-blue-600 px-1.5 rounded">Líder</span>
+                            {% endif %}
+                        </li>
+                    {% empty %}
+                        <li class="text-sm text-slate-400 italic">Nenhum participante votou ainda.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+    </div>
+    
+    <div class="pt-4">
+        <a href="{% url 'home' %}" class="text-sm text-slate-500 hover:text-slate-900 flex items-center">
+            <i data-lucide="arrow-left" class="mr-1 h-4 w-4"></i>
+            Voltar ao Painel
+        </a>
+    </div>
+
+</div>
 {% endblock %}

@@ -9,7 +9,8 @@ from django.urls import reverse
 from datetime import date, datetime, timedelta
 from .forms import SignUpForm, MeetingForm, TimeSlotForm
 from .models import Meeting, TimeSlot, Availability, User
-
+from datetime import datetime, timedelta, time
+from .forms import SignUpForm, MeetingForm, TimeSlotForm, GenerateSlotsForm # <Adicione GenerateSlotsForm
 
 
 def signup_view(request):
@@ -30,11 +31,13 @@ def signup_view(request):
 @login_required(login_url='/login/')
 def home_view(request):
     user = request.user
+    meetings_as_leader = Meeting.objects.filter(
+        leader=user, 
+        status=Meeting.Status.EM_VOTACAO
+    )
+    # --------------------
 
-    # Reuniões criadas pelo professor
-    meetings_as_leader = Meeting.objects.filter(leader=user)
-
-    # Reuniões confirmadas em que o usuário é líder OU votou
+    # Reuniões confirmadas (Líder ou Participante)
     confirmed_meetings = Meeting.objects.filter(
         status=Meeting.Status.CONFIRMADA
     ).filter(
@@ -42,9 +45,18 @@ def home_view(request):
         models.Q(availabilities__user=user)
     ).distinct().order_by('chosen_start')
 
+    # Reuniões que o aluno votou (Aguardando)
+    voted_meetings = Meeting.objects.filter(
+        availabilities__user=user,
+        status=Meeting.Status.EM_VOTACAO
+    ).exclude(
+        leader=user
+    ).distinct()
+
     return render(request, 'home.html', {
-        'meetings_as_leader': meetings_as_leader,
-        'confirmed_meetings': confirmed_meetings
+        'meetings_as_leader': meetings_as_leader, # Agora só tem as ativas
+        'confirmed_meetings': confirmed_meetings,
+        'voted_meetings': voted_meetings,
     })
 
 def is_professor(user):
@@ -85,7 +97,7 @@ def meeting_detail_view(request, meeting_id):
     # slots com número de votos
     time_slots = meeting.time_slots.annotate(
         num_votos=Count('availabilities')
-    )
+    ).prefetch_related('availabilities__user').order_by('start')
 
     # participantes = quem já marcou disponibilidade
     participants = User.objects.filter(
@@ -127,18 +139,26 @@ def manage_timeslots_view(request, meeting_id):
     else:
         form = TimeSlotForm()
 
+    generate_form = GenerateSlotsForm()
+
     slots = meeting.time_slots.all().order_by('start')
 
     return render(request, 'manage_timeslots.html', {
         'meeting': meeting,
         'form': form,
         'slots': slots,
+        'generate_form': generate_form,
     })
 
 
 @login_required(login_url='/login/')
 def vote_view(request, meeting_id):
     meeting = get_object_or_404(Meeting, id=meeting_id)
+    
+    if meeting.status != Meeting.Status.EM_VOTACAO:
+        # Retorna erro 403 (Proibido) ou redireciona com aviso
+        return HttpResponseForbidden("Esta votação já foi encerrada e o horário definido.")
+
     slots = meeting.time_slots.all().order_by('start')
 
     # slots que o usuário já marcou antes
@@ -250,3 +270,36 @@ def calendar_view(request):
         'month': month_name,
         'weeks': weeks,
     })
+
+@user_passes_test(lambda u: u.is_authenticated and u.role == 'PROFESSOR', login_url='/login/')
+def generate_slots_view(request, meeting_id):
+    meeting = get_object_or_404(Meeting, id=meeting_id)
+    
+    if meeting.leader != request.user:
+        return HttpResponseForbidden('Você não é o líder desta reunião.')
+
+    if request.method == 'POST':
+        form = GenerateSlotsForm(request.POST)
+        if form.is_valid():
+            data = form.cleaned_data
+            
+            # Combina a data com a hora para criar o datetime completo
+            current_time = datetime.combine(data['date'], data['start_time'])
+            end_limit = datetime.combine(data['date'], data['end_time'])
+            interval = timedelta(minutes=data['interval'])
+            
+            # Loop para criar os horários
+            slots_to_create = []
+            while current_time + interval <= end_limit:
+                end_slot = current_time + interval
+                slots_to_create.append(TimeSlot(
+                    meeting=meeting,
+                    start=current_time,
+                    end=end_slot
+                ))
+                current_time = end_slot
+            
+            # Salva tudo de uma vez no banco (mais rápido)
+            TimeSlot.objects.bulk_create(slots_to_create)
+            
+    return redirect('manage_timeslots', meeting_id=meeting.id)

@@ -3,18 +3,40 @@
 {% block content %}
 <h2>Gerenciar horários - {{ meeting.title }}</h2>
 
-<h3>Adicionar novo intervalo</h3>
+<div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 20px;">
+    <h3>⚡ Gerar Vários Horários (Automático)</h3>
+    <p>Escolha um dia e o intervalo para criar vários blocos de uma vez.</p>
+    
+    <form method="post" action="{% url 'generate_slots' meeting.id %}">
+        {% csrf_token %}
+        
+        <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
+            {% for field in generate_form %}
+            <div>
+                <label style="display:block; font-size: 0.8em; font-weight: bold;">{{ field.label }}</label>
+                {{ field }}
+            </div>
+            {% endfor %}
+            
+            <button type="submit" style="background-color: #007bff; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
+                Gerar Blocos
+            </button>
+        </div>
+    </form>
+</div>
+<hr>
+<h3>Adicionar horário único (Manual)</h3>
 <form method="post">
     {% csrf_token %}
     {{ form.non_field_errors }}
 
-    <div>
+    <div style="margin-bottom: 10px;">
         <label for="{{ form.start.id_for_label }}">{{ form.start.label }}:</label>
         {{ form.start }}
         {{ form.start.errors }}
     </div>
 
-    <div>
+    <div style="margin-bottom: 10px;">
         <label for="{{ form.end.id_for_label }}">{{ form.end.label }}:</label>
         {{ form.end }}
         {{ form.end.errors }}
@@ -26,7 +48,9 @@
 <h3>Horários atuais</h3>
 <ul>
     {% for slot in slots %}
-        <li>{{ slot.start }} → {{ slot.end }}</li>
+        <li>
+            {{ slot.start|date:"d/m H:i" }} até {{ slot.end|date:"H:i" }}
+        </li>
     {% empty %}
         <li>Nenhum horário cadastrado ainda.</li>
     {% endfor %}

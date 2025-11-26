@@ -1,35 +1,196 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h2>Painel</h2>
 
-<p>
-    <a href="{% url 'calendar' %}">
-        <button>Ver calendário</button>
-    </a>
-</p>
+<!-- HEADER (Idêntico ao Lovable) -->
+<header class="sticky top-0 z-50 border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+    <div class="container mx-auto px-4 py-4">
+        <div class="flex items-center justify-between">
+            <!-- Logo -->
+            <div class="flex items-center gap-3">
+                <i data-lucide="calendar" class="h-8 w-8 text-blue-600"></i> <!-- Ícone Calendar -->
+                <h1 class="text-2xl font-bold tracking-tight">Agendaki</h1>
+            </div>
 
-{% if user.role == 'PROFESSOR' %}
-    <p>Você é <strong>Professor</strong>.</p>
-    <p>
-        <a href="{% url 'create_meeting' %}">
-            <button>+ Criar reunião</button>
-        </a>
-    </p>
-{% else %}
-    <p>Você é <strong>Aluno</strong>. Você verá aqui as reuniões em que participa (quando ligarmos isso ao calendário e às reuniões confirmadas).</p>
-{% endif %}
+            <!-- Lado Direito: Badge e Logout -->
+            <div class="flex items-center gap-3">
+                <!-- Badge de Role -->
+                <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2
+                    {% if user.role == 'PROFESSOR' %} border-transparent bg-blue-100 text-blue-800 hover:bg-blue-200
+                    {% else %} border-transparent bg-green-100 text-green-800 hover:bg-green-200 {% endif %}">
+                    {{ user.get_role_display }}
+                </span>
 
-<h3>Reuniões criadas por você</h3>
-<ul>
-    {% for m in meetings_as_leader %}
-        <li>
-            <a href="{% url 'meeting_detail' m.id %}">
-                {{ m.title }} - {{ m.get_status_display }}
+                <!-- Botão Sair -->
+                <a href="{% url 'logout' %}" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-slate-100 h-9 w-9">
+                    <i data-lucide="log-out" class="h-4 w-4"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header>
+
+<main class="container mx-auto px-4 py-8">
+    
+    <!-- Título da Página e Botão de Criar -->
+    <div class="mb-8 flex items-center justify-between">
+        <div>
+            <h2 class="text-3xl font-bold tracking-tight">Dashboard</h2>
+            <p class="text-slate-500 mt-1">
+                {% if user.role == 'PROFESSOR' %}
+                    Crie reuniões e gerencie os horários.
+                {% else %}
+                    Visualize convites e marque sua disponibilidade.
+                {% endif %}
+            </p>
+        </div>
+        
+        {% if user.role == 'PROFESSOR' %}
+            <a href="{% url 'create_meeting' %}" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-slate-900 text-white hover:bg-slate-900/90 h-10 px-4 py-2 gap-2">
+                <i data-lucide="plus" class="h-4 w-4"></i>
+                Nova Reunião
             </a>
-        </li>
-    {% empty %}
-        <li>Nenhuma reunião criada ainda.</li>
-    {% endfor %}
-</ul>
+        {% endif %}
+    </div>
+
+    <div class="space-y-8">
+        
+        <!-- SEÇÃO 1: REUNIÕES ATIVAS (EM VOTAÇÃO) -->
+        <!-- Mostra para o Professor (que lidera) ou Aluno (que votou) -->
+        {% if meetings_as_leader or voted_meetings %}
+            <section>
+                <div class="mb-4">
+                    <h3 class="text-xl font-semibold">Em Andamento</h3>
+                    <p class="text-sm text-slate-500">
+                        Votação aberta. Aguardando definição final.
+                    </p>
+                </div>
+                
+                <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    
+                    <!-- Loop das reuniões do LÍDER -->
+                    {% for m in meetings_as_leader %}
+                        <!-- Card Estilo Lovable -->
+                        <div class="rounded-lg border bg-white text-slate-950 shadow-sm transition-all hover:shadow-md">
+                            <div class="flex flex-col space-y-1.5 p-6">
+                                <div class="flex items-center justify-between">
+                                    <h3 class="text-lg font-semibold leading-none tracking-tight">{{ m.title }}</h3>
+                                    <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-yellow-100 text-yellow-800">
+                                        Votando
+                                    </span>
+                                </div>
+                                <p class="text-sm text-slate-500 line-clamp-2">{{ m.description|default:"Sem descrição" }}</p>
+                            </div>
+                            <div class="p-6 pt-0">
+                                <div class="flex items-center text-sm text-slate-500 mb-4">
+                                    <i data-lucide="users" class="mr-2 h-4 w-4"></i>
+                                    <!-- Truque para contar availabilities únicas se possível, ou apenas texto -->
+                                    Participantes votando...
+                                </div>
+                                <a href="{% url 'meeting_detail' m.id %}" class="inline-flex w-full items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-slate-200 bg-white hover:bg-slate-100 hover:text-slate-900 h-9 px-4 py-2">
+                                    Gerenciar
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
+
+                    <!-- Loop das reuniões do ALUNO (Que ele já votou) -->
+                    {% for m in voted_meetings %}
+                        <div class="rounded-lg border bg-white text-slate-950 shadow-sm transition-all hover:shadow-md border-l-4 border-l-yellow-400">
+                            <div class="flex flex-col space-y-1.5 p-6">
+                                <div class="flex items-center justify-between">
+                                    <h3 class="text-lg font-semibold leading-none tracking-tight">{{ m.title }}</h3>
+                                    <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-yellow-100 text-yellow-800">
+                                        Aguardando
+                                    </span>
+                                </div>
+                                <p class="text-sm text-slate-500">Você já votou.</p>
+                            </div>
+                            <div class="p-6 pt-0">
+                                <a href="{% url 'meeting_detail' m.id %}" class="inline-flex w-full items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-slate-200 bg-white hover:bg-slate-100 h-9 px-4 py-2">
+                                    Ver Detalhes
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
+
+                </div>
+            </section>
+        {% endif %}
+
+
+        <!-- SEÇÃO 2: REUNIÕES CONFIRMADAS -->
+        {% if confirmed_meetings %}
+            <!-- Separator -->
+            <div class="h-[1px] w-full bg-slate-200 my-8"></div>
+
+            <section>
+                <div class="mb-4">
+                    <h3 class="text-xl font-semibold">Reuniões Confirmadas</h3>
+                    <p class="text-sm text-slate-500">
+                        Horários finalizados e agendados.
+                    </p>
+                </div>
+                
+                <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {% for m in confirmed_meetings %}
+                        <div class="rounded-lg border bg-white text-slate-950 shadow-sm transition-all hover:shadow-md border-l-4 border-l-green-500">
+                            <div class="flex flex-col space-y-1.5 p-6">
+                                <div class="flex items-center justify-between">
+                                    <h3 class="text-lg font-semibold leading-none tracking-tight">{{ m.title }}</h3>
+                                    <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-green-100 text-green-800">
+                                        Confirmado
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="p-6 pt-0">
+                                <div class="mb-4 rounded-md bg-slate-50 p-3">
+                                    <div class="flex items-center text-sm font-medium mb-1">
+                                        <i data-lucide="calendar-check" class="mr-2 h-4 w-4 text-green-600"></i>
+                                        {{ m.chosen_start|date:"d/m/Y" }}
+                                    </div>
+                                    <div class="flex items-center text-sm text-slate-500 ml-6">
+                                        {{ m.chosen_start|date:"H:i" }} - {{ m.chosen_end|date:"H:i" }}
+                                    </div>
+                                </div>
+                                <a href="{% url 'meeting_detail' m.id %}" class="inline-flex w-full items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-slate-900 text-white hover:bg-slate-900/90 h-9 px-4 py-2">
+                                    Ver Agenda
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
+
+        <!-- EMPTY STATE (Se não tiver nada) -->
+        {% if not meetings_as_leader and not voted_meetings and not confirmed_meetings %}
+            <div class="rounded-lg border border-dashed bg-white text-slate-950 shadow-sm">
+                <div class="flex flex-col space-y-1.5 p-6 items-center text-center py-12">
+                    <div class="rounded-full bg-slate-100 p-3 mb-4">
+                        <i data-lucide="calendar-x" class="h-6 w-6 text-slate-400"></i>
+                    </div>
+                    <h3 class="text-2xl font-semibold leading-none tracking-tight">Nenhuma reunião encontrada</h3>
+                    <p class="text-sm text-slate-500 max-w-sm mt-2">
+                        {% if user.role == 'PROFESSOR' %}
+                            Comece criando sua primeira reunião para convidar os alunos.
+                        {% else %}
+                            Você ainda não tem convites. Aguarde o professor enviar um link.
+                        {% endif %}
+                    </p>
+                    
+                    {% if user.role == 'PROFESSOR' %}
+                        <div class="mt-6">
+                            <a href="{% url 'create_meeting' %}" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-slate-900 text-white hover:bg-slate-900/90 h-10 px-4 py-2 gap-2">
+                                <i data-lucide="plus" class="h-4 w-4"></i>
+                                Criar Reunião
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+
+    </div>
+</main>
 {% endblock %}

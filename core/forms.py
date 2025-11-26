@@ -37,3 +37,23 @@ class TimeSlotForm(forms.ModelForm):
             'start': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
             'end': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
         }
+
+class GenerateSlotsForm(forms.Form):
+    date = forms.DateField(
+        label="Dia",
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
+    )
+    start_time = forms.TimeField(
+        label="Hora Inicial",
+        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'})
+    )
+    end_time = forms.TimeField(
+        label="Hora Final",
+        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'})
+    )
+    interval = forms.IntegerField(
+        label="Duração (minutos)",
+        initial=30,
+        min_value=15,
+        widget=forms.NumberInput(attrs={'class': 'form-control'})
+    )
