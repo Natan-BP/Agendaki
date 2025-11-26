@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Gerenciar horários - {{ meeting.title }}</h2>
+
+<h3>Adicionar novo intervalo</h3>
+<form method="post">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <div>
+        <label for="{{ form.start.id_for_label }}">{{ form.start.label }}:</label>
+        {{ form.start }}
+        {{ form.start.errors }}
+    </div>
+
+    <div>
+        <label for="{{ form.end.id_for_label }}">{{ form.end.label }}:</label>
+        {{ form.end }}
+        {{ form.end.errors }}
+    </div>
+
+    <button type="submit">Adicionar horário</button>
+</form>
+
+<h3>Horários atuais</h3>
+<ul>
+    {% for slot in slots %}
+        <li>{{ slot.start }} → {{ slot.end }}</li>
+    {% empty %}
+        <li>Nenhum horário cadastrado ainda.</li>
+    {% endfor %}
+</ul>
+
+<p><a href="{% url 'meeting_detail' meeting.id %}">Voltar para a reunião</a></p>
+{% endblock %}

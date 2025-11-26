@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Painel</h2>
+
+<p>
+    <a href="{% url 'calendar' %}">
+        <button>Ver calendário</button>
+    </a>
+</p>
+
+{% if user.role == 'PROFESSOR' %}
+    <p>Você é <strong>Professor</strong>.</p>
+    <p>
+        <a href="{% url 'create_meeting' %}">
+            <button>+ Criar reunião</button>
+        </a>
+    </p>
+{% else %}
+    <p>Você é <strong>Aluno</strong>. Você verá aqui as reuniões em que participa (quando ligarmos isso ao calendário e às reuniões confirmadas).</p>
+{% endif %}
+
+<h3>Reuniões criadas por você</h3>
+<ul>
+    {% for m in meetings_as_leader %}
+        <li>
+            <a href="{% url 'meeting_detail' m.id %}">
+                {{ m.title }} - {{ m.get_status_display }}
+            </a>
+        </li>
+    {% empty %}
+        <li>Nenhuma reunião criada ainda.</li>
+    {% endfor %}
+</ul>
+{% endblock %}

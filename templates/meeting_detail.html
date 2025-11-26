@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Reunião: {{ meeting.title }}</h2>
+<p>{{ meeting.description }}</p>
+<p>Status: {{ meeting.get_status_display }}</p>
+
+{% if meeting.chosen_start %}
+    <p><strong>Horário final escolhido:</strong>
+        {{ meeting.chosen_start }} → {{ meeting.chosen_end }}
+    </p>
+{% else %}
+    <p><strong>Horário final ainda não definido.</strong></p>
+{% endif %}
+
+{% if user == meeting.leader %}
+    <p>
+        <a href="{% url 'manage_timeslots' meeting.id %}">
+            <button>Gerenciar horários</button>
+        </a>
+
+        {% if meeting.status == 'CONFIRMADA' %}
+            <a href="{% url 'reopen_meeting' meeting.id %}">
+                <button>Reabrir votação</button>
+            </a>
+        {% endif %}
+    </p>
+
+    <h3>Link de convite</h3>
+    <p>
+        Compartilhe este link com os alunos para eles votarem:<br>
+        <code>{{ invite_url }}</code>
+    </p>
+{% else %}
+    <p>
+        <a href="{% url 'vote_meeting' meeting.id %}">
+            <button>Preencher minha disponibilidade</button>
+        </a>
+    </p>
+{% endif %}
+
+<h3>Horários propostos</h3>
+<ul>
+    {% for slot in time_slots %}
+        <li>
+            {{ slot.start }} → {{ slot.end }}
+            | Votos: {{ slot.num_votos }}
+
+            {% if user == meeting.leader %}
+                {% if meeting.chosen_start and slot.start == meeting.chosen_start and slot.end == meeting.chosen_end %}
+                    <strong>(Selecionado)</strong>
+                {% else %}
+                    <a href="{% url 'confirm_slot' meeting.id slot.id %}">
+                        [Definir este horário]
+                    </a>
+                {% endif %}
+            {% endif %}
+        </li>
+    {% empty %}
+        <li>Nenhum horário cadastrado ainda.</li>
+    {% endfor %}
+</ul>
+
+<h3>Participantes que já votaram</h3>
+<ul>
+    {% for p in participants %}
+        <li>{{ p.username }} ({{ p.get_role_display }})</li>
+    {% empty %}
+        <li>Nenhum participante votou ainda.</li>
+    {% endfor %}
+</ul>
+
+<p><a href="{% url 'home' %}">Voltar</a></p>
+{% endblock %}

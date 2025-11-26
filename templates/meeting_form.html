@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Criar reunião</h2>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <div>
+        <label for="{{ form.title.id_for_label }}">{{ form.title.label }}:</label>
+        {{ form.title }}
+        {{ form.title.errors }}
+    </div>
+
+    <div>
+        <label for="{{ form.description.id_for_label }}">{{ form.description.label }}:</label>
+        {{ form.description }}
+        {{ form.description.errors }}
+    </div>
+
+    <button type="submit">Salvar</button>
+</form>
+
+<p><a href="{% url 'home' %}">Voltar</a></p>
+{% endblock %}

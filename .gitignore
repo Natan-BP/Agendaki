@@ -1,0 +1,31 @@
+# Django
+__pycache__/
+db.sqlite3
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+
+# Migrations (somente cache, NÃO ignore pastas)
+*/migrations/__pycache__/
+
+# Virtual environment
+venv/
+.venv/
+env/
+.djangoenv/
+.djangodev/
+.djadatatemp/
+
+# VSCode
+.vscode/
+
+# PyCharm
+.idea/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Arquivos estáticos gerados
+staticfiles/

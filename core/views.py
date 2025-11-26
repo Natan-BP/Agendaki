@@ -1,0 +1,252 @@
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import login
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.http import HttpResponseForbidden
+from django.db.models import Count
+from django.db import models
+import calendar
+from django.urls import reverse
+from datetime import date, datetime, timedelta
+from .forms import SignUpForm, MeetingForm, TimeSlotForm
+from .models import Meeting, TimeSlot, Availability, User
+
+
+
+def signup_view(request):
+    if request.method == 'POST':
+        form = SignUpForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            # loga o usuário assim que ele se cadastra
+            login(request, user)
+            return redirect('home')
+    else:
+        form = SignUpForm()
+
+    return render(request, 'signup.html', {'form': form})
+
+
+
+@login_required(login_url='/login/')
+def home_view(request):
+    user = request.user
+
+    # Reuniões criadas pelo professor
+    meetings_as_leader = Meeting.objects.filter(leader=user)
+
+    # Reuniões confirmadas em que o usuário é líder OU votou
+    confirmed_meetings = Meeting.objects.filter(
+        status=Meeting.Status.CONFIRMADA
+    ).filter(
+        models.Q(leader=user) |
+        models.Q(availabilities__user=user)
+    ).distinct().order_by('chosen_start')
+
+    return render(request, 'home.html', {
+        'meetings_as_leader': meetings_as_leader,
+        'confirmed_meetings': confirmed_meetings
+    })
+
+def is_professor(user):
+    return user.is_authenticated and user.role == 'PROFESSOR'
+
+@user_passes_test(is_professor, login_url='/login/')
+def create_meeting_view(request):
+    if request.method == 'POST':
+        form = MeetingForm(request.POST)
+        if form.is_valid():
+            meeting = form.save(commit=False)
+            meeting.leader = request.user  # professor logado
+            meeting.save()
+            return redirect('home')
+    else:
+        form = MeetingForm()
+
+    return render(request, 'meeting_form.html', {'form': form})
+
+@user_passes_test(is_professor, login_url='/login/')
+def reopen_meeting_view(request, meeting_id):
+    meeting = get_object_or_404(Meeting, id=meeting_id)
+
+    if meeting.leader != request.user:
+        return HttpResponseForbidden('Você não é o líder desta reunião.')
+
+    meeting.status = Meeting.Status.EM_VOTACAO
+    meeting.chosen_start = None
+    meeting.chosen_end = None
+    meeting.save()
+
+    return redirect('meeting_detail', meeting_id=meeting.id)
+
+@login_required(login_url='/login/')
+def meeting_detail_view(request, meeting_id):
+    meeting = get_object_or_404(Meeting, id=meeting_id)
+
+    # slots com número de votos
+    time_slots = meeting.time_slots.annotate(
+        num_votos=Count('availabilities')
+    )
+
+    # participantes = quem já marcou disponibilidade
+    participants = User.objects.filter(
+        availabilities__meeting=meeting
+    ).distinct()
+
+    # URL completa de convite por link
+    invite_url = request.build_absolute_uri(
+        reverse('meeting_invite', args=[meeting.invite_token])
+    )
+
+    return render(request, 'meeting_detail.html', {
+        'meeting': meeting,
+        'time_slots': time_slots,
+        'participants': participants,
+        'invite_url': invite_url,
+    })
+
+@login_required(login_url='/login/')
+def meeting_invite_view(request, token):
+    meeting = get_object_or_404(Meeting, invite_token=token)
+    return redirect('meeting_detail', meeting_id=meeting.id)
+
+
+@user_passes_test(lambda u: u.is_authenticated and u.role == 'PROFESSOR', login_url='/login/')
+def manage_timeslots_view(request, meeting_id):
+    meeting = get_object_or_404(Meeting, id=meeting_id)
+
+    if meeting.leader != request.user:
+        return HttpResponseForbidden('Você não é o líder desta reunião.')
+
+    if request.method == 'POST':
+        form = TimeSlotForm(request.POST)
+        if form.is_valid():
+            slot = form.save(commit=False)
+            slot.meeting = meeting
+            slot.save()
+            return redirect('manage_timeslots', meeting_id=meeting.id)
+    else:
+        form = TimeSlotForm()
+
+    slots = meeting.time_slots.all().order_by('start')
+
+    return render(request, 'manage_timeslots.html', {
+        'meeting': meeting,
+        'form': form,
+        'slots': slots,
+    })
+
+
+@login_required(login_url='/login/')
+def vote_view(request, meeting_id):
+    meeting = get_object_or_404(Meeting, id=meeting_id)
+    slots = meeting.time_slots.all().order_by('start')
+
+    # slots que o usuário já marcou antes
+    user_slots_ids = set(
+        Availability.objects.filter(
+            meeting=meeting,
+            user=request.user
+        ).values_list('timeslot_id', flat=True)
+    )
+
+    if request.method == 'POST':
+        selected_ids = request.POST.getlist('slots')  # lista de strings
+        selected_ids = [int(s) for s in selected_ids]
+
+        # apaga disponibilidades antigas desse usuário nessa reunião
+        Availability.objects.filter(
+            meeting=meeting,
+            user=request.user
+        ).delete()
+
+        # cria as novas
+        novas = []
+        for slot_id in selected_ids:
+            # garante que o slot pertence a essa meeting
+            slot = slots.filter(id=slot_id).first()
+            if slot:
+                novas.append(Availability(
+                    meeting=meeting,
+                    timeslot=slot,
+                    user=request.user
+                ))
+        Availability.objects.bulk_create(novas)
+
+        return redirect('meeting_detail', meeting_id=meeting.id)
+
+    return render(request, 'vote_meeting.html', {
+        'meeting': meeting,
+        'slots': slots,
+        'user_slots_ids': user_slots_ids,
+    })
+
+@user_passes_test(lambda u: u.is_authenticated and u.role == 'PROFESSOR', login_url='/login/')
+def confirm_slot_view(request, meeting_id, slot_id):
+    meeting = get_object_or_404(Meeting, id=meeting_id)
+    if meeting.leader != request.user:
+        return HttpResponseForbidden('Você não é o líder desta reunião.')
+
+    slot = get_object_or_404(TimeSlot, id=slot_id, meeting=meeting)
+
+    # define horário final
+    meeting.chosen_start = slot.start
+    meeting.chosen_end = slot.end
+    meeting.status = Meeting.Status.CONFIRMADA
+    meeting.save()
+
+    return redirect('meeting_detail', meeting_id=meeting.id)
+
+@login_required(login_url='/login/')
+def calendar_view(request):
+    today = date.today()
+    year = today.year
+    month = today.month
+
+    # info do mês
+    first_weekday, num_days = calendar.monthrange(year, month)  # Monday = 0
+    all_days = [date(year, month, d) for d in range(1, num_days + 1)]
+
+    # reuniões confirmadas do usuário
+    confirmed = Meeting.objects.filter(
+        status=Meeting.Status.CONFIRMADA
+    ).filter(
+        models.Q(leader=request.user) |
+        models.Q(availabilities__user=request.user)
+    ).distinct()
+
+    # monta semanas: lista de semanas, cada semana = lista de 7 "células"
+    # cada célula é None ou um dict {'date': date, 'events': [meetings]}
+    weeks = []
+    week = []
+
+    # preenche espaços vazios antes do 1º dia
+    for _ in range(first_weekday):
+        week.append(None)
+
+    for d in all_days:
+        # eventos nesse dia
+        events = [m for m in confirmed
+                  if m.chosen_start and m.chosen_start.date() == d]
+
+        week.append({
+            'date': d,
+            'events': events,
+        })
+
+        if len(week) == 7:
+            weeks.append(week)
+            week = []
+
+    # completa a última semana com None
+    if week:
+        while len(week) < 7:
+            week.append(None)
+        weeks.append(week)
+
+    month_name = today.strftime("%B")  # se quiser em PT-BR dá pra trocar depois
+
+    return render(request, 'calendar.html', {
+        'year': year,
+        'month': month_name,
+        'weeks': weeks,
+    })

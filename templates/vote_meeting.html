@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Disponibilidade para: {{ meeting.title }}</h2>
+
+<form method="post">
+    {% csrf_token %}
+    <ul>
+        {% for slot in slots %}
+            <li>
+                <label>
+                    <input type="checkbox" name="slots" value="{{ slot.id }}"
+                        {% if slot.id in user_slots_ids %}checked{% endif %}>
+                    {{ slot.start }} → {{ slot.end }}
+                </label>
+            </li>
+        {% empty %}
+            <li>Não há horários disponíveis para votar ainda.</li>
+        {% endfor %}
+    </ul>
+
+    <button type="submit">Salvar minhas disponibilidades</button>
+</form>
+
+<p><a href="{% url 'meeting_detail' meeting.id %}">Voltar para a reunião</a></p>
+{% endblock %}

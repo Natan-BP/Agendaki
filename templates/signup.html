@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Cadastro</h2>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <div>
+        <label for="{{ form.username.id_for_label }}">Usuário:</label>
+        {{ form.username }}
+        {{ form.username.errors }}
+    </div>
+
+    <div>
+        <label for="{{ form.email.id_for_label }}">E-mail:</label>
+        {{ form.email }}
+        {{ form.email.errors }}
+    </div>
+
+    <div>
+        <p>Tipo de usuário:</p>
+        {{ form.role }}
+        {{ form.role.errors }}
+    </div>
+
+    <div>
+        <label for="{{ form.password1.id_for_label }}">Senha:</label>
+        {{ form.password1 }}
+        {{ form.password1.errors }}
+    </div>
+
+    <div>
+        <label for="{{ form.password2.id_for_label }}">Confirmar senha:</label>
+        {{ form.password2 }}
+        {{ form.password2.errors }}
+    </div>
+
+    <button type="submit">Cadastrar</button>
+</form>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Calendário de {{ month }} {{ year }}</h2>
+
+<p><a href="{% url 'home' %}">Voltar</a></p>
+
+<style>
+    table.calendar {
+        border-collapse: collapse;
+        width: 100%;
+    }
+    table.calendar th,
+    table.calendar td {
+        border: 1px solid #ccc;
+        width: 14%;
+        vertical-align: top;
+        height: 100px;
+        padding: 4px;
+    }
+    .day-number {
+        font-weight: bold;
+        margin-bottom: 4px;
+    }
+    .event {
+        background: #dff;
+        padding: 3px;
+        margin: 2px 0;
+        border-radius: 4px;
+        font-size: 12px;
+    }
+</style>
+
+<table class="calendar">
+    <tr>
+        <th>Seg</th>
+        <th>Ter</th>
+        <th>Qua</th>
+        <th>Qui</th>
+        <th>Sex</th>
+        <th>Sáb</th>
+        <th>Dom</th>
+    </tr>
+
+    {% for week in weeks %}
+        <tr>
+            {% for cell in week %}
+                <td>
+                    {% if cell %}
+                        <div class="day-number">{{ cell.date.day }}</div>
+
+                        {% for event in cell.events %}
+                            <div class="event">
+                                <strong>{{ event.title }}</strong><br>
+                                {{ event.chosen_start|time }} → {{ event.chosen_end|time }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </td>
+            {% endfor %}
+        </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}
