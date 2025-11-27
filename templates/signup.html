@@ -113,12 +113,43 @@
                     updateVisuals();
                 });
             </script>
-            <div>
-                <label for="{{ form.password1.id_for_label }}">Senha</label>
-                {{ form.password1 }} </div>
-             <div>
-                <label for="{{ form.password1.id_for_label }}">Confirmação de Senha</label>
-                {{ form.password2 }}
+            <div class="space-y-4">
+                
+                <div>
+                    <label for="{{ form.password1.id_for_label }}">Senha</label>
+                    {{ form.password1 }}
+                    
+                    {% if form.password1.errors %}
+                        <div class="mt-1 flex items-center text-red-600 text-xs font-medium animate-pulse">
+                            <i data-lucide="alert-circle" class="h-3 w-3 mr-1"></i>
+                            {{ form.password1.errors.0 }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.password2.id_for_label }}">Confirmação de Senha</label>
+                    {{ form.password2 }}
+                    
+                    {% if form.password2.errors %}
+                        <div class="mt-1 flex items-center text-red-600 text-xs font-medium bg-red-50 p-2 rounded border border-red-100">
+                            <i data-lucide="alert-triangle" class="h-4 w-4 mr-2"></i>
+                            As senhas não coincidem. Tente novamente.
+                        </div>
+                    {% endif %}
+                </div>
+
+                {% if form.non_field_errors %}
+                    <div class="p-3 rounded-md bg-red-50 border border-red-100 text-sm text-red-600">
+                        {% for error in form.non_field_errors %}
+                            <p class="flex items-center">
+                                <i data-lucide="x-circle" class="h-4 w-4 mr-2"></i>
+                                {{ error }}
+                            </p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
             </div>
 
             <div class="pt-4">
