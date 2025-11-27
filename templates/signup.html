@@ -134,7 +134,9 @@
                     {% if form.password2.errors %}
                         <div class="mt-1 flex items-center text-red-600 text-xs font-medium bg-red-50 p-2 rounded border border-red-100">
                             <i data-lucide="alert-triangle" class="h-4 w-4 mr-2"></i>
-                            As senhas não coincidem. Tente novamente.
+                            
+                            {{ form.password2.errors.0 }} 
+                            
                         </div>
                     {% endif %}
                 </div>

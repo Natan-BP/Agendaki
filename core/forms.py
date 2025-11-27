@@ -1,8 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from .models import User
 from .models import User, Meeting, TimeSlot
-
 
 class SignUpForm(UserCreationForm):
     role = forms.ChoiceField(
@@ -13,7 +11,9 @@ class SignUpForm(UserCreationForm):
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'role', 'password1', 'password2')
+        # REMOVIDOS 'password1' e 'password2' DAQUI
+        # O UserCreationForm já cuida deles automaticamente.
+        fields = ('username', 'email', 'role') 
 
 class MeetingForm(forms.ModelForm):
     class Meta:
@@ -23,7 +23,6 @@ class MeetingForm(forms.ModelForm):
             'title': 'Título da reunião',
             'description': 'Descrição (opcional)',
         }
-        
 
 class TimeSlotForm(forms.ModelForm):
     class Meta:

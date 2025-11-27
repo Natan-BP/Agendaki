@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="flex items-center justify-center min-h-[60vh]">
+    <div class="w-full max-w-md bg-white rounded-lg border shadow-sm p-8">
+        
+        <div class="mb-6">
+            <h2 class="text-xl font-bold text-slate-900">Editar Horário</h2>
+            <p class="text-sm text-slate-500">Altere o início ou fim do bloco.</p>
+        </div>
+
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            
+            <style>
+                input[type="datetime-local"] {
+                    width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px;
+                }
+            </style>
+
+            <div>
+                <label class="block text-sm font-medium mb-1">Início</label>
+                {{ form.start }}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-1">Fim</label>
+                {{ form.end }}
+            </div>
+
+            <div class="flex gap-3 pt-4">
+                <a href="{% url 'manage_timeslots' meeting.id %}" class="w-1/2 inline-flex justify-center items-center rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">
+                    Cancelar
+                </a>
+                <button type="submit" class="w-1/2 inline-flex justify-center items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+                    Salvar Alteração
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,60 +1,212 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h2>Gerenciar horários - {{ meeting.title }}</h2>
+<div class="max-w-5xl mx-auto pb-12">
 
-<div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 20px;">
-    <h3>⚡ Gerar Vários Horários (Automático)</h3>
-    <p>Escolha um dia e o intervalo para criar vários blocos de uma vez.</p>
-    
-    <form method="post" action="{% url 'generate_slots' meeting.id %}">
-        {% csrf_token %}
-        
-        <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
-            {% for field in generate_form %}
-            <div>
-                <label style="display:block; font-size: 0.8em; font-weight: bold;">{{ field.label }}</label>
-                {{ field }}
-            </div>
-            {% endfor %}
-            
-            <button type="submit" style="background-color: #007bff; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
-                Gerar Blocos
-            </button>
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+            <h2 class="text-3xl font-bold tracking-tight text-slate-900">Gerenciar Horários</h2>
+            <p class="text-slate-500 mt-1">Reunião: <span class="font-semibold text-slate-700">{{ meeting.title }}</span></p>
         </div>
-    </form>
+        <a href="{% url 'meeting_detail' meeting.id %}" class="inline-flex items-center text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors bg-white border border-slate-200 rounded-md px-3 py-1.5 hover:bg-slate-50">
+            <i data-lucide="arrow-left" class="mr-2 h-4 w-4"></i>
+            Voltar para Reunião
+        </a>
+    </div>
+
+    <style>
+        input[type="text"], input[type="date"], input[type="time"], input[type="datetime-local"], select, textarea {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.375rem;
+            border: 1px solid #e2e8f0;
+            font-size: 0.875rem;
+            background-color: white;
+            transition: all 0.2s;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #0f172a;
+            ring: 1px solid #0f172a;
+        }
+        label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #475569;
+            margin-bottom: 0.25rem;
+            display: block;
+        }
+    </style>
+
+    <div class="bg-blue-50 border border-blue-100 rounded-lg p-6 mb-8 shadow-sm">
+        <div class="flex items-center gap-2 mb-4">
+            <div class="p-2 bg-blue-100 rounded-full text-blue-700">
+                <i data-lucide="zap" class="h-5 w-5"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold text-blue-900">Gerador Rápido</h3>
+                <p class="text-sm text-blue-700">Crie vários horários de uma vez!</p>
+            </div>
+        </div>
+
+        <form method="post" action="{% url 'generate_slots' meeting.id %}">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                {% for field in generate_form %}
+                <div>
+                    <label class="text-blue-900">{{ field.label }}</label>
+                    {{ field }}
+                </div>
+                {% endfor %}
+                
+                <button type="submit" class="h-[38px] w-full inline-flex justify-center items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors shadow-sm shadow-blue-900/10">
+                    Gerar Blocos
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-8">
+        
+        <div class="md:col-span-1">
+            <div class="bg-white p-6 rounded-lg border shadow-sm sticky top-24">
+                <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                    <i data-lucide="plus-circle" class="h-4 w-4 text-slate-500"></i>
+                    Adicionar Manual
+                </h3>
+                
+                <form method="post" class="space-y-4">
+                    {% csrf_token %}
+                    {{ form.non_field_errors }}
+
+                    <div>
+                        <label for="{{ form.start.id_for_label }}">Início:</label>
+                        {{ form.start }}
+                        <div class="text-xs text-red-500 mt-1">{{ form.start.errors }}</div>
+                    </div>
+
+                    <div>
+                        <label for="{{ form.end.id_for_label }}">Fim:</label>
+                        {{ form.end }}
+                        <div class="text-xs text-red-500 mt-1">{{ form.end.errors }}</div>
+                    </div>
+
+                    <button type="submit" class="w-full inline-flex justify-center items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                        Adicionar
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="md:col-span-2 space-y-6">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="list" class="h-4 w-4 text-slate-400"></i>
+                    Horários Cadastrados 
+                </h3>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {% for slot in slots %}
+                    <div class="group flex items-center justify-between p-3 rounded-md border border-slate-200 bg-white hover:border-blue-300 hover:shadow-sm transition-all">
+                        
+                        <div class="flex flex-col">
+                            <span class="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                                {{ slot.start|date:"d/m" }} <span class="font-normal lowercase">({{ slot.start|date:"l" }})</span>
+                            </span>
+                            <span class="text-sm font-semibold text-slate-900">
+                                {{ slot.start|date:"H:i" }} - {{ slot.end|date:"H:i" }}
+                            </span>
+                        </div>
+                        
+                        <div class="flex items-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                            <a href="{% url 'edit_slot' meeting.id slot.id %}" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Editar horário">
+                                <i data-lucide="pencil" class="h-4 w-4"></i>
+                            </a>
+
+                            <form method="post" action="{% url 'delete_slot' meeting.id slot.id %}" onsubmit="return confirm('Tem certeza que deseja excluir este horário?');" class="m-0">
+                                {% csrf_token %}
+                                <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Excluir horário">
+                                    <i data-lucide="trash-2" class="h-4 w-4"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="col-span-2 p-12 text-center rounded-lg border border-dashed border-slate-300 bg-slate-50">
+                        <div class="bg-white p-3 rounded-full inline-block mb-3 shadow-sm">
+                            <i data-lucide="calendar" class="h-6 w-6 text-slate-400"></i>
+                        </div>
+                        <p class="text-slate-900 font-medium">Nenhum horário criado ainda.</p>
+                        <p class="text-slate-500 text-sm mt-1">Use o gerador azul ou adicione manualmente.</p>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="mt-12 border-t pt-8">
+                <details class="group bg-white rounded-lg border border-slate-200 shadow-sm open:ring-2 open:ring-slate-100 transition-all">
+                    <summary class="flex items-center justify-between p-4 cursor-pointer list-none font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="settings-2" class="h-5 w-5 text-slate-400"></i>
+                            Configurações da Reunião
+                        </div>
+                        <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400 transition-transform group-open:rotate-180"></i>
+                    </summary>
+                    
+                    <div class="p-6 border-t border-slate-100 space-y-8 animate-in fade-in slide-in-from-top-2 duration-200">
+                        
+                        <div>
+                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Editar Informações</h4>
+                            <form method="post" action="{% url 'update_meeting' meeting.id %}">
+                                {% csrf_token %}
+                                
+                                <div class="grid gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Título</label>
+                                        {{ meeting_form.title }} 
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Descrição</label>
+                                        {{ meeting_form.description }}
+                                    </div>
+                                </div>
+
+                                <div class="mt-4 flex justify-end">
+                                    <button type="submit" class="inline-flex items-center justify-center rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 transition-colors shadow-sm">
+                                        Salvar Alterações
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="h-px bg-slate-100"></div>
+
+                        <div>
+                            <h4 class="text-xs font-bold text-red-600 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                <i data-lucide="alert-triangle" class="h-4 w-4"></i>
+                                Apagar Reunião
+                            </h4>
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-red-50 rounded-md p-4 border border-red-100">
+                                <p class="text-sm text-red-800">
+                                    Excluir esta reunião apagará permanentemente todos os horários e votos.
+                                </p>
+                                
+                                <form method="post" action="{% url 'delete_meeting' meeting.id %}" onsubmit="return confirm('ATENÇÃO: Tem certeza absoluta que deseja excluir esta reunião?');" class="m-0">
+                                    {% csrf_token %}
+                                    <button type="submit" class="whitespace-nowrap inline-flex items-center justify-center rounded-md border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 hover:border-red-300 transition-colors shadow-sm">
+                                        Excluir 
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                    </div>
+                </details>
+            </div>
+        </div>
+
+    </div>
 </div>
-<hr>
-<h3>Adicionar horário único (Manual)</h3>
-<form method="post">
-    {% csrf_token %}
-    {{ form.non_field_errors }}
-
-    <div style="margin-bottom: 10px;">
-        <label for="{{ form.start.id_for_label }}">{{ form.start.label }}:</label>
-        {{ form.start }}
-        {{ form.start.errors }}
-    </div>
-
-    <div style="margin-bottom: 10px;">
-        <label for="{{ form.end.id_for_label }}">{{ form.end.label }}:</label>
-        {{ form.end }}
-        {{ form.end.errors }}
-    </div>
-
-    <button type="submit">Adicionar horário</button>
-</form>
-
-<h3>Horários atuais</h3>
-<ul>
-    {% for slot in slots %}
-        <li>
-            {{ slot.start|date:"d/m H:i" }} até {{ slot.end|date:"H:i" }}
-        </li>
-    {% empty %}
-        <li>Nenhum horário cadastrado ainda.</li>
-    {% endfor %}
-</ul>
-
-<p><a href="{% url 'meeting_detail' meeting.id %}">Voltar para a reunião</a></p>
 {% endblock %}

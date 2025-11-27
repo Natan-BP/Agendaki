@@ -173,11 +173,14 @@ def manage_timeslots_view(request, meeting_id):
 
     slots = meeting.time_slots.all().order_by('start')
 
+    meeting_form = MeetingForm(instance=meeting)
+
     return render(request, 'manage_timeslots.html', {
         'meeting': meeting,
         'form': form,
         'slots': slots,
         'generate_form': generate_form,
+        'meeting_form': meeting_form,
     })
 
 
@@ -332,4 +335,78 @@ def generate_slots_view(request, meeting_id):
             # Salva tudo de uma vez no banco (mais rápido)
             TimeSlot.objects.bulk_create(slots_to_create)
             
+    return redirect('manage_timeslots', meeting_id=meeting.id)
+
+# --- FUNÇÃO DE DELETAR HORARIO ---
+@user_passes_test(lambda u: u.is_authenticated and u.role == 'PROFESSOR', login_url='/login/')
+def delete_slot_view(request, meeting_id, slot_id):
+    meeting = get_object_or_404(Meeting, id=meeting_id)
+    slot = get_object_or_404(TimeSlot, id=slot_id, meeting=meeting)
+
+    # Segurança: só o dono da reunião pode deletar
+    if request.user != meeting.leader:
+        return HttpResponseForbidden("Você não tem permissão para alterar esta reunião.")
+
+    if request.method == 'POST':
+        slot.delete()
+        return redirect('manage_timeslots', meeting_id=meeting.id)
+    
+    # Se tentar acessar por GET (sem clicar no botão), volta para a lista
+    return redirect('manage_timeslots', meeting_id=meeting.id)
+
+
+# --- FUNÇÃO DE EDITAR HORARIO ---
+@user_passes_test(lambda u: u.is_authenticated and u.role == 'PROFESSOR', login_url='/login/')
+def edit_slot_view(request, meeting_id, slot_id):
+    meeting = get_object_or_404(Meeting, id=meeting_id)
+    slot = get_object_or_404(TimeSlot, id=slot_id, meeting=meeting)
+
+    if request.user != meeting.leader:
+        return HttpResponseForbidden("Você não tem permissão.")
+
+    # O segredo da edição: instance=slot (preenche o formulário com os dados atuais)
+    if request.method == 'POST':
+        form = TimeSlotForm(request.POST, instance=slot)
+        if form.is_valid():
+            form.save()
+            return redirect('manage_timeslots', meeting_id=meeting.id)
+    else:
+        form = TimeSlotForm(instance=slot)
+
+    # Vamos usar um template simples só para essa edição
+    return render(request, 'slot_edit_form.html', {
+        'form': form,
+        'meeting': meeting,
+        'slot': slot
+    })
+
+# --- FUNÇÕES DE EDIÇÃO E EXCLUSÃO DE AGENDAMENTO---
+@user_passes_test(lambda u: u.is_authenticated and u.role == 'PROFESSOR', login_url='/login/')
+def update_meeting_details(request, meeting_id):
+    meeting = get_object_or_404(Meeting, id=meeting_id)
+    
+    if request.user != meeting.leader:
+        return HttpResponseForbidden("Sem permissão.")
+
+    if request.method == 'POST':
+        form = MeetingForm(request.POST, instance=meeting)
+        if form.is_valid():
+            form.save()
+            # Volta para a mesma página com os dados atualizados
+            return redirect('manage_timeslots', meeting_id=meeting.id)
+    
+    return redirect('manage_timeslots', meeting_id=meeting.id)
+
+@user_passes_test(lambda u: u.is_authenticated and u.role == 'PROFESSOR', login_url='/login/')
+def delete_meeting_view(request, meeting_id):
+    meeting = get_object_or_404(Meeting, id=meeting_id)
+    
+    if request.user != meeting.leader:
+        return HttpResponseForbidden("Sem permissão.")
+
+    if request.method == 'POST':
+        meeting.delete()
+        # Se deletou, não tem como voltar. Vai para a Home.
+        return redirect('home')
+    
     return redirect('manage_timeslots', meeting_id=meeting.id)

@@ -29,4 +29,9 @@ urlpatterns = [
     path('meetings/<uuid:meeting_id>/slots/generate/', core_views.generate_slots_view, name='generate_slots'),
     path('logout/', LogoutView.as_view(template_name='logged_out.html'), name='logout'),
     path('login/', LoginView.as_view(template_name='login.html'), name='login'),
+
+    path('meetings/<uuid:meeting_id>/slots/<int:slot_id>/delete/', core_views.delete_slot_view, name='delete_slot'),
+    path('meetings/<uuid:meeting_id>/slots/<int:slot_id>/edit/', core_views.edit_slot_view, name='edit_slot'),
+    path('meetings/<uuid:meeting_id>/update/', core_views.update_meeting_details, name='update_meeting'),
+    path('meetings/<uuid:meeting_id>/delete/', core_views.delete_meeting_view, name='delete_meeting'),
 ]
