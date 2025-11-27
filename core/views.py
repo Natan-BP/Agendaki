@@ -95,16 +95,57 @@ def is_professor(user):
 @user_passes_test(is_professor, login_url='/login/')
 def create_meeting_view(request):
     if request.method == 'POST':
-        form = MeetingForm(request.POST)
-        if form.is_valid():
-            meeting = form.save(commit=False)
-            meeting.leader = request.user  # professor logado
-            meeting.save()
-            return redirect('home')
-    else:
-        form = MeetingForm()
+        # Recebe os dados dos DOIS formulários
+        meeting_form = MeetingForm(request.POST)
+        generate_form = GenerateSlotsForm(request.POST)
 
-    return render(request, 'meeting_form.html', {'form': form})
+        if meeting_form.is_valid():
+            # 1. Salva a reunião primeiro (sem comitar para adicionar o líder)
+            meeting = meeting_form.save(commit=False)
+            meeting.leader = request.user
+            meeting.save()
+
+            # 2. Verifica se o professor preencheu o gerador de horários
+            # Se ele deixou em branco, is_valid() será False e o código pula este bloco (o que é bom!)
+            if generate_form.is_valid():
+                data = generate_form.cleaned_data
+                
+                # Prepara as variáveis de data e hora
+                current_time = datetime.combine(data['date'], data['start_time'])
+                end_limit = datetime.combine(data['date'], data['end_time'])
+                interval = timedelta(minutes=data['interval'])
+                
+                slots_to_create = []
+                
+                # Loop Matemático: Cria os slots enquanto não passar do horário final
+                while current_time + interval <= end_limit:
+                    end_slot = current_time + interval
+                    
+                    slots_to_create.append(TimeSlot(
+                        meeting=meeting, # Associa à reunião recém-criada
+                        start=current_time,
+                        end=end_slot
+                    ))
+                    
+                    # Avança para o próximo bloco
+                    current_time = end_slot
+                
+                # Salva todos os horários de uma vez no banco (mais eficiente)
+                TimeSlot.objects.bulk_create(slots_to_create)
+
+            # 3. Redireciona para a tela de gerenciar horários
+            # Assim o professor já vê os horários criados ou adiciona mais se quiser
+            return redirect('home')
+    
+    else:
+        # GET: Mostra os formulários vazios
+        meeting_form = MeetingForm()
+        generate_form = GenerateSlotsForm()
+
+    return render(request, 'meeting_form.html', {
+        'form': meeting_form,           # Formulário da Reunião (Título/Descrição)
+        'generate_form': generate_form  # Formulário do Gerador (Data/Hora)
+    })
 
 @user_passes_test(is_professor, login_url='/login/')
 def reopen_meeting_view(request, meeting_id):
