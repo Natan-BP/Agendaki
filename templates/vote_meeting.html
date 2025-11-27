@@ -1,7 +1,8 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto pb-24"> <div class="mb-8 text-center">
+<div class="max-w-5xl mx-auto pb-24"> 
+    <div class="mb-8 text-center">
         <h2 class="text-3xl font-bold tracking-tight text-slate-900">Sua Disponibilidade</h2>
         <p class="text-slate-500 mt-2">
             Marque todos os horários que funcionam para você na reunião:
@@ -10,9 +11,8 @@
         </p>
     </div>
 
-    <form method="post">
-        {% csrf_token %}
-
+    <div id="voting-container">
+        
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {% for slot in slots %}
                 <label class="relative cursor-pointer group">
@@ -33,10 +33,9 @@
                         </div>
 
                         <div class="h-6 w-6 rounded-full border-2 border-slate-300 bg-white 
-                                    group-has-[:checked]:border-green-500 group-has-[:checked]:bg-green-500 
+                                    peer-checked:border-green-500 peer-checked:bg-green-500 
                                     flex items-center justify-center text-white transition-colors">
-                            
-                            <i data-lucide="check" class="h-4 w-4 opacity-0 group-has-[:checked]:opacity-100"></i>
+                            <i data-lucide="check" class="h-4 w-4 opacity-0 peer-checked:opacity-100"></i>
                         </div>
                     </div>
                 </label>
@@ -52,13 +51,75 @@
                     <a href="{% url 'meeting_detail' meeting.id %}" class="w-1/2 md:w-auto inline-flex justify-center items-center rounded-md border border-slate-200 bg-white px-6 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
                         Cancelar
                     </a>
-                    <button type="submit" class="w-1/2 md:w-auto inline-flex justify-center items-center rounded-md bg-slate-900 px-8 py-2 text-sm font-medium text-white hover:bg-slate-800 shadow-lg shadow-slate-900/20">
+                    
+                    <button type="button" id="btn-salvar" class="w-1/2 md:w-auto inline-flex justify-center items-center rounded-md bg-slate-900 px-8 py-2 text-sm font-medium text-white hover:bg-slate-800 shadow-lg shadow-slate-900/20">
                         Salvar Disponibilidade
                     </button>
                 </div>
             </div>
         </div>
 
-    </form>
+    </div>
 </div>
+
+<script>
+    document.getElementById('btn-salvar').addEventListener('click', function() {
+        const btn = this;
+        
+        // 1. Gera os dados (Captura os IDs marcados)
+        // Isso atende ao requisito: "dados gerados em javascript"
+        const checkboxes = document.querySelectorAll('input[name="slots"]:checked');
+        const slotIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+        
+        // Feedback visual
+        btn.innerText = "Salvando...";
+        btn.disabled = true;
+
+        // 2. Pega o Token CSRF (Segurança obrigatória do Django)
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        const csrftoken = getCookie('csrftoken');
+
+        // 3. Consome a API (Fetch)
+        // Isso atende ao requisito: "consumir a API"
+        fetch('/api/meetings/{{ meeting.id }}/vote/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({
+                slot_ids: slotIds
+            })
+        })
+        .then(response => {
+            if (response.ok) {
+                // Sucesso: Redireciona para os detalhes
+                window.location.href = "{% url 'meeting_detail' meeting.id %}";
+            } else {
+                alert("Erro ao salvar votos.");
+                btn.innerText = "Tentar Novamente";
+                btn.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            alert("Erro de conexão.");
+            btn.innerText = "Tentar Novamente";
+            btn.disabled = false;
+        });
+    });
+</script>
 {% endblock %}

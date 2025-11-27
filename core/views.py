@@ -10,7 +10,9 @@ from datetime import date, datetime, timedelta
 from .forms import SignUpForm, MeetingForm, TimeSlotForm, GenerateSlotsForm, UserProfileForm
 from .models import Meeting, TimeSlot, Availability, User
 from datetime import datetime, timedelta, time
-
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .serializers import VoteSerializer
 
 @login_required(login_url='/login/')
 def profile_view(request):
@@ -465,3 +467,37 @@ def delete_meeting_view(request, meeting_id):
         return redirect('home')
     
     return redirect('manage_timeslots', meeting_id=meeting.id)
+
+@api_view(['POST'])
+def save_votes_api(request, meeting_id):
+    meeting = get_object_or_404(Meeting, id=meeting_id)
+
+    # 1. Segurança: Verifica se a votação está aberta
+    if meeting.status != Meeting.Status.EM_VOTACAO:
+        return Response({"error": "Votação encerrada"}, status=403)
+
+    # 2. Validação: O Serializer checa se os dados do JS estão certos
+    serializer = VoteSerializer(data=request.data)
+
+    if serializer.is_valid():
+        slot_ids = serializer.validated_data['slot_ids']
+
+        # 3. Lógica: Apaga votos antigos e salva os novos
+        Availability.objects.filter(meeting=meeting, user=request.user).delete()
+
+        novas = []
+        # Filtra apenas slots que pertencem a esta reunião (segurança extra)
+        slots = meeting.time_slots.filter(id__in=slot_ids)
+
+        for slot in slots:
+            novas.append(Availability(
+                meeting=meeting, 
+                timeslot=slot, 
+                user=request.user
+            ))
+
+        Availability.objects.bulk_create(novas)
+
+        return Response({"message": "Votos salvos com sucesso!"}, status=200)
+
+    return Response(serializer.errors, status=400)

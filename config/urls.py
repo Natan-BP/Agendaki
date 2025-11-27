@@ -21,6 +21,7 @@ urlpatterns = [
     path('meetings/<uuid:meeting_id>/', core_views.meeting_detail_view, name='meeting_detail'),
     path('meetings/<uuid:meeting_id>/slots/', core_views.manage_timeslots_view, name='manage_timeslots'),
     path('meetings/<uuid:meeting_id>/vote/', core_views.vote_view, name='vote_meeting'),
+    path('api/meetings/<uuid:meeting_id>/vote/', core_views.save_votes_api, name='api_save_vote'),
 
     path('', core_views.home_view, name='home'),
     path('meetings/<uuid:meeting_id>/confirm/<int:slot_id>/',
