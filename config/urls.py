@@ -1,8 +1,10 @@
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.views import LoginView, LogoutView
 from core import views as core_views
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -34,4 +36,8 @@ urlpatterns = [
     path('meetings/<uuid:meeting_id>/slots/<int:slot_id>/edit/', core_views.edit_slot_view, name='edit_slot'),
     path('meetings/<uuid:meeting_id>/update/', core_views.update_meeting_details, name='update_meeting'),
     path('meetings/<uuid:meeting_id>/delete/', core_views.delete_meeting_view, name='delete_meeting'),
+    path('profile/', core_views.profile_view, name='profile'),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

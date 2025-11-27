@@ -7,11 +7,25 @@ from django.db import models
 import calendar
 from django.urls import reverse
 from datetime import date, datetime, timedelta
-from .forms import SignUpForm, MeetingForm, TimeSlotForm
+from .forms import SignUpForm, MeetingForm, TimeSlotForm, GenerateSlotsForm, UserProfileForm
 from .models import Meeting, TimeSlot, Availability, User
 from datetime import datetime, timedelta, time
-from .forms import SignUpForm, MeetingForm, TimeSlotForm, GenerateSlotsForm # <Adicione GenerateSlotsForm
 
+
+@login_required(login_url='/login/')
+def profile_view(request):
+    user = request.user
+    
+    if request.method == 'POST':
+        # request.FILES é obrigatório para uploads de imagem!
+        form = UserProfileForm(request.POST, request.FILES, instance=user)
+        if form.is_valid():
+            form.save()
+            return redirect('home')
+    else:
+        form = UserProfileForm(instance=user)
+    
+    return render(request, 'profile.html', {'form': form})
 
 def signup_view(request):
     if request.method == 'POST':

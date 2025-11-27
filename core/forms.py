@@ -2,6 +2,11 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from .models import User, Meeting, TimeSlot
 
+class UserProfileForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'avatar']
+
 class SignUpForm(UserCreationForm):
     role = forms.ChoiceField(
         choices=User.Role.choices,

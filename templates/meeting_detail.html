@@ -2,11 +2,12 @@
 
 {% block content %}
 <div class="max-w-4xl mx-auto mb-4">
-        <a href="{% url 'home' %}" class="inline-flex items-center text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors p-2 -ml-2 rounded-md hover:bg-slate-100">
-            <i data-lucide="arrow-left" class="mr-2 h-4 w-4"></i>
-            Voltar ao Dashboard
-        </a>
-    </div>
+    <a href="{% url 'home' %}" class="inline-flex items-center text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors p-2 -ml-2 rounded-md hover:bg-slate-100">
+        <i data-lucide="arrow-left" class="mr-2 h-4 w-4"></i>
+        Voltar ao Dashboard
+    </a>
+</div>
+
 <div class="max-w-4xl mx-auto space-y-6">
 
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-lg border shadow-sm">
@@ -37,7 +38,7 @@
         {% endif %}
     </div>
 
-{% if user == meeting.leader %}
+    {% if user == meeting.leader %}
     <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 flex flex-col md:flex-row items-center justify-between gap-4">
         <div class="text-sm text-blue-900">
             <strong>Link de convite:</strong> Compartilhe com os alunos.
@@ -57,34 +58,17 @@
 
     <script>
         function copyLink() {
-            // 1. Pega o input
             var copyText = document.getElementById("inviteUrl");
-            
-            // 2. Seleciona o texto (para garantir compatibilidade mobile)
             copyText.select();
             copyText.setSelectionRange(0, 99999); 
-
-            // 3. Copia para a área de transferência
             navigator.clipboard.writeText(copyText.value).then(() => {
-                
-                // 4. Feedback Visual (Muda para Verde e diz "Copiado!")
                 var btn = document.getElementById("copyBtn");
                 var text = document.getElementById("copyText");
-                var icon = document.getElementById("copyIcon");
-                
-                // Salva o estilo original
                 var originalClass = btn.className;
-                
-                // Aplica estilo de sucesso (Verde)
                 btn.className = "inline-flex items-center justify-center rounded-md bg-green-600 border border-green-700 px-3 py-1.5 text-sm font-medium text-white shadow-sm transition-all";
                 text.innerText = "Copiado!";
-                
-                // Muda o ícone para Check (opcional, precisa recarregar o lucide ou apenas esconder)
-                // Aqui vamos simplificar mantendo o ícone mas mudando a cor do fundo
-                
-                // 5. Volta ao normal depois de 2 segundos
                 setTimeout(function() {
-                    btn.className = originalClass; // Volta classes originais
+                    btn.className = originalClass; 
                     text.innerText = "Copiar";
                 }, 2000);
             });
@@ -169,21 +153,58 @@
 
         <div>
             <div class="bg-white rounded-lg border shadow-sm p-4 sticky top-24">
-                <h3 class="text-sm font-semibold text-slate-900 mb-3 uppercase tracking-wider">Participantes</h3>
-                <ul class="space-y-2">
-                    {% for p in participants %}
-                        <li class="flex items-center gap-2 text-sm text-slate-600">
-                            <div class="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500">
-                                {{ p.username|slice:":2"|upper }}
-                            </div>
-                            <span>{{ p.username }}</span>
-                            {% if p == meeting.leader %}
-                                <span class="text-xs bg-blue-50 text-blue-600 px-1.5 rounded">Líder</span>
+                <h3 class="text-sm font-semibold text-slate-900 mb-4 uppercase tracking-wider flex items-center gap-2">
+                    <i data-lucide="users" class="h-4 w-4"></i>
+                    Participantes
+                </h3>
+                
+                <ul class="space-y-3">
+                    
+                    <li class="flex items-center gap-3">
+                        <div class="h-10 w-10 shrink-0">
+                            {% if meeting.leader.avatar %}
+                                <img src="{{ meeting.leader.avatar.url }}" alt="{{ meeting.leader.username }}" class="h-10 w-10 rounded-full object-cover border border-slate-200 shadow-sm">
+                            {% else %}
+                                <div class="h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold border border-slate-200 shadow-sm bg-blue-100 text-blue-700">
+                                    {{ meeting.leader.username|slice:":1"|upper }}
+                                </div>
                             {% endif %}
+                        </div>
+
+                        <div class="flex flex-col">
+                            <span class="text-sm font-medium text-slate-900 leading-tight">
+                                {{ meeting.leader.get_full_name|default:meeting.leader.username }}
+                            </span>
+                            <span class="text-[10px] font-bold uppercase text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-sm w-fit mt-0.5">
+                                Organizador
+                            </span>
+                        </div>
+                    </li>
+
+                    {% for p in participants %}
+                        <li class="flex items-center gap-3">
+                            <div class="h-10 w-10 shrink-0">
+                                {% if p.avatar %}
+                                    <img src="{{ p.avatar.url }}" alt="{{ p.username }}" class="h-10 w-10 rounded-full object-cover border border-slate-200 shadow-sm">
+                                {% else %}
+                                    <div class="h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold border border-slate-200 shadow-sm 
+                                        {% if p.role == 'PROFESSOR' %} bg-blue-100 text-blue-700 {% else %} bg-slate-100 text-slate-600 {% endif %}">
+                                        {{ p.username|slice:":1"|upper }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="flex flex-col">
+                                <span class="text-sm font-medium text-slate-900 leading-tight">
+                                    {{ p.get_full_name|default:p.username }}
+                                </span>
+                                <span class="text-xs text-slate-500">
+                                    {{ p.get_role_display }}
+                                </span>
+                            </div>
                         </li>
-                    {% empty %}
-                        <li class="text-sm text-slate-400 italic">Nenhum participante votou ainda.</li>
                     {% endfor %}
+                    
                 </ul>
             </div>
         </div>

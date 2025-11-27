@@ -14,12 +14,33 @@
 
             <!-- Lado Direito: Badge e Logout -->
             <div class="flex items-center gap-3">
-                <!-- Badge de Role -->
-                <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2
-                    {% if user.role == 'PROFESSOR' %} border-transparent bg-blue-100 text-blue-800 hover:bg-blue-200
-                    {% else %} border-transparent bg-green-100 text-green-800 hover:bg-green-200 {% endif %}">
-                    {{ user.get_role_display }}
-                </span>
+
+                <!-- Avatar Nome e Badge -->
+                <a href="{% url 'profile' %}" class="flex items-center gap-3 hover:opacity-80 transition-opacity" title="Editar Perfil">
+    
+                    <div class="text-right hidden sm:block">
+                        <div class="text-sm font-medium text-slate-900">
+                            {{ user.username }}
+                        </div>
+                        <div class="text-xs text-slate-500">
+                            {{ user.get_role_display }}
+                        </div>
+                    </div>
+
+                    {% if user.avatar %}
+                        <img src="{{ user.avatar.url }}" 
+                            alt="Perfil" 
+                            class="h-10 w-10 rounded-full object-cover border border-slate-200">
+                    {% else %}
+                        <div class="h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold border border-slate-200 shadow-sm
+                            {% if user.role == 'PROFESSOR' %} bg-blue-100 text-blue-700 
+                            {% else %} bg-green-100 text-green-700 {% endif %}">
+                            {{ user.username|slice:":1"|upper }}
+                        </div>
+                    {% endif %}
+                    
+                </a>
+                
 
                 <!-- Botão Sair -->
                 <form action="{% url 'logout' %}" method="post" style="display: inline;">

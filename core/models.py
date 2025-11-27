@@ -13,6 +13,8 @@ class User(AbstractUser):
         choices=Role.choices,
         default=Role.ALUNO,
     )
+    
+    avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
 
 
 class Meeting(models.Model):
