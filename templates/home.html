@@ -22,9 +22,12 @@
                 </span>
 
                 <!-- Botão Sair -->
-                <a href="{% url 'logout' %}" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-slate-100 h-9 w-9">
-                    <i data-lucide="log-out" class="h-4 w-4"></i>
-                </a>
+                <form action="{% url 'logout' %}" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-slate-100 h-9 w-9" title="Sair">
+                        <i data-lucide="log-out" class="h-4 w-4"></i>
+                    </button>
+                </form>
             </div>
         </div>
     </div>

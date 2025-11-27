@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.urls import path
 from django.contrib.auth import views as auth_views
+from django.contrib.auth.views import LoginView, LogoutView
 from core import views as core_views
 
 urlpatterns = [
@@ -26,5 +27,6 @@ urlpatterns = [
     path('meetings/<uuid:meeting_id>/reopen/', core_views.reopen_meeting_view, name='reopen_meeting'),
     path('invite/<uuid:token>/', core_views.meeting_invite_view, name='meeting_invite'),
     path('meetings/<uuid:meeting_id>/slots/generate/', core_views.generate_slots_view, name='generate_slots'),
-
+    path('logout/', LogoutView.as_view(template_name='logged_out.html'), name='logout'),
+    path('login/', LoginView.as_view(template_name='login.html'), name='login'),
 ]
