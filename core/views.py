@@ -31,32 +31,62 @@ def signup_view(request):
 @login_required(login_url='/login/')
 def home_view(request):
     user = request.user
-    meetings_as_leader = Meeting.objects.filter(
-        leader=user, 
-        status=Meeting.Status.EM_VOTACAO
-    )
-    # --------------------
-
-    # Reuniões confirmadas (Líder ou Participante)
+    
+    # 1. Filtros de Reuniões 
+    meetings_as_leader = Meeting.objects.filter(leader=user, status=Meeting.Status.EM_VOTACAO)
+    
     confirmed_meetings = Meeting.objects.filter(
         status=Meeting.Status.CONFIRMADA
     ).filter(
-        models.Q(leader=user) |
-        models.Q(availabilities__user=user)
+        models.Q(leader=user) | models.Q(availabilities__user=user)
     ).distinct().order_by('chosen_start')
 
-    # Reuniões que o aluno votou (Aguardando)
     voted_meetings = Meeting.objects.filter(
-        availabilities__user=user,
-        status=Meeting.Status.EM_VOTACAO
-    ).exclude(
-        leader=user
-    ).distinct()
+        availabilities__user=user, status=Meeting.Status.EM_VOTACAO
+    ).exclude(leader=user).distinct()
 
+    # 2. Lógica do Calendário 
+    today = datetime.now()
+    year, month = today.year, today.month
+    
+    cal = calendar.Calendar(firstweekday=6)
+    month_days = cal.monthdayscalendar(year, month)
+
+    calendar_weeks = []
+    
+    for week in month_days:
+        week_data = []
+        for day in week:
+            if day == 0:
+                week_data.append(None)
+            else:
+                # Criamos uma data completa para comparar com precisão
+                current_day_date = datetime(year, month, day).date()
+                today_date = today.date()
+
+                day_events = []
+                for m in confirmed_meetings:
+                    if m.chosen_start.date() == current_day_date:
+                        day_events.append(m)
+                
+                week_data.append({
+                    'day': day,
+                    'is_today': (current_day_date == today_date),
+                    'is_past': (current_day_date < today_date),
+                    'events': day_events
+                })
+                
+        calendar_weeks.append(week_data)
+
+    meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+    
     return render(request, 'home.html', {
-        'meetings_as_leader': meetings_as_leader, # Agora só tem as ativas
+        'meetings_as_leader': meetings_as_leader,
         'confirmed_meetings': confirmed_meetings,
         'voted_meetings': voted_meetings,
+        'calendar_weeks': calendar_weeks,
+        'current_month_name': meses[month - 1],
+        'current_year': year,
     })
 
 def is_professor(user):

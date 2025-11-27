@@ -57,6 +57,81 @@
     </div>
 
     <div class="space-y-8">
+
+        <!-- Calendário -->
+
+        <div class="mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-slate-900">
+                    📅 {{ current_month_name }} {{ current_year }}
+                </h3>
+                <span class="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">Hoje: {{ current_year }}-{{ current_month_name }}</span>
+            </div>
+
+            <div class="bg-white rounded-lg border shadow-sm overflow-hidden">
+                
+                <div class="grid grid-cols-7 border-b bg-slate-50 text-center text-xs font-semibold text-slate-500 py-2">
+                    <div>Dom</div>
+                    <div>Seg</div>
+                    <div>Ter</div>
+                    <div>Qua</div>
+                    <div>Qui</div>
+                    <div>Sex</div>
+                    <div>Sáb</div>
+                </div>
+
+            <div class="flex flex-col">
+                        {% for week in calendar_weeks %}
+                            <div class="grid grid-cols-7 border-b last:border-b-0 min-h-[65px]">
+                                {% for day_info in week %}
+                                    <div class="relative border-r last:border-r-0 p-1 transition-colors hover:bg-slate-50 
+                                                {% if day_info.is_today %}bg-blue-50/50{% endif %}">
+                                        
+                                        {% if day_info %}
+                                            <div class="flex justify-end mb-1">
+                                                <span class="text-xs font-medium 
+                                                    {% if day_info.is_today %}
+                                                        bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center shadow-sm
+                                                    {% else %}
+                                                        text-slate-400 mr-1
+                                                    {% endif %}">
+                                                    {{ day_info.day }}
+                                                </span>
+                                            </div>
+
+                                            <div class="space-y-1">
+                                                {% for event in day_info.events %}
+                                                    <a href="{% url 'meeting_detail' event.id %}" class="block group">
+                                                        
+                                                        <div class="border rounded px-1 py-0.5 transition-all shadow-sm hover:shadow-md cursor-pointer
+                                                            {% if day_info.is_past %}
+                                                                bg-slate-100 border-slate-200 text-slate-400 hover:bg-slate-200 hover:text-slate-600
+                                                            {% elif day_info.is_today %}
+                                                                bg-green-100 border-green-200 text-green-800 hover:bg-green-600 hover:text-white
+                                                            {% else %}
+                                                                bg-blue-100 border-blue-200 text-blue-800 hover:bg-blue-600 hover:text-white
+                                                            {% endif %}
+                                                        " title="{{ event.title }}">
+                                                            
+                                                            <div class="truncate text-[10px] leading-tight">
+                                                                <span class="font-bold">{{ event.title }}</span>
+                                                                <span class="opacity-75 block text-[9px]">
+                                                                    {{ event.chosen_start|date:"H:i" }}-{{ event.chosen_end|date:"H:i" }}
+                                                                </span>
+                                                            </div>
+                                                            
+                                                        </div>
+                                                    </a>
+                                                {% endfor %}
+                                            </div>
+                                        {% else %}
+                                            <div class="h-full bg-slate-50/30"></div>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
         
         <!-- SEÇÃO 1: REUNIÕES ATIVAS (EM VOTAÇÃO) -->
         <!-- Mostra para o Professor (que lidera) ou Aluno (que votou) -->
